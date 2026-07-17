@@ -1,0 +1,107 @@
+name: Build Shivzo APK
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # 🪄 सुपर सिंपल: गिटहब खुद ही 1 सेकंड में पूरा ऐप का ढांचा खड़ा कर देगा
+      - name: Create Minimal App Files
+        run: |
+          mkdir -p app/src/main/java/com/shivzo/app
+          mkdir -p app/src/main/res/layout
+
+          # 1. settings.gradle (सिर्फ एक लाइन)
+          echo "include ':app'" > settings.gradle
+
+          # 2. app/build.gradle (सिर्फ जरूरी सेटिंग्स)
+          cat << 'EOF' > app/build.gradle
+          plugins { id 'com.android.application' version '8.2.0' }
+          android {
+              namespace 'com.shivzo.app'
+              compileSdk 34
+              defaultConfig {
+                  applicationId "com.shivzo.app"
+                  minSdk 21
+                  targetSdk 34
+                  versionCode 1
+                  versionName "1.0"
+              }
+          }
+          dependencies {
+              implementation 'androidx.appcompat:appcompat:1.6.1'
+          }
+          EOF
+
+          # 3. AndroidManifest.xml (इंटरनेट परमिशन के साथ)
+          cat << 'EOF' > app/src/main/AndroidManifest.xml
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.shivzo.app">
+              <uses-permission android:name="android.permission.INTERNET" />
+              <application android:label="Shivzo" android:theme="@style/Theme.AppCompat.Light.NoActionBar" android:usesCleartextTraffic="true">
+                  <activity android:name=".MainActivity" android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN" />
+                          <category android:name="android.intent.category.LAUNCHER" />
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          EOF
+
+          # 4. activity_main.xml (पूरी स्क्रीन पर वेबसाइट दिखाने का लेआउट)
+          cat << 'EOF' > app/src/main/res/layout/activity_main.xml
+          <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
+              <WebView android:id="@+id/webview" android:layout_width="match_parent" android:layout_height="match_parent" />
+          </LinearLayout>
+          EOF
+
+          # 5. MainActivity.java (वेबसाइट लोड करने का सिंपल कोड)
+          cat << 'EOF' > app/src/main/java/com/shivzo/app/MainActivity.java
+          package com.shivzo.app;
+          import android.os.Bundle;
+          import android.webkit.WebView;
+          import android.webkit.WebViewClient;
+          import androidx.appcompat.app.AppCompatActivity;
+          public class MainActivity extends AppCompatActivity {
+              @Override
+              protected void onCreate(Bundle savedInstanceState) {
+                  super.onCreate(savedInstanceState);
+                  setContentView(R.layout.activity_main);
+                  WebView web = findViewById(R.id.webview);
+                  web.getSettings().setJavaScriptEnabled(true);
+                  web.getSettings().setDomStorageEnabled(true);
+                  web.setWebViewClient(new WebViewClient());
+                  web.loadUrl("https://shivzo.in");
+              }
+          }
+          EOF
+
+      # गिटहब का ऑफिशियल टूल्स सेटअप
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      # सीधा एपीके बिल्ड कमांड
+      - name: Build APK
+        run: gradle :app:assembleDebug
+
+      # एपीके फाइल को सेव करना ताकि आप डाउनलोड कर सकें
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Shivzo-App
+          path: app/build/outputs/apk/debug/app-debug.apk
+
