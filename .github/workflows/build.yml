@@ -28,9 +28,11 @@ jobs:
           # settings.gradle
           echo "include ':app'" > settings.gradle
           
-          # app/build.gradle
+          # app/build.gradle (Gradle 9.x के अनुकूल आसान कोडिंग)
           cat << 'EOF' > app/build.gradle
-          plugins { id 'com.android.application' version '8.2.0' }
+          plugins {
+              id 'com.android.application' version '8.4.0'
+          }
           android {
               namespace 'com.shivzo.app'
               compileSdk 34
@@ -101,4 +103,3 @@ jobs:
         with:
           name: Shivzo-APK
           path: app/build/outputs/apk/debug/app-debug.apk
-          
