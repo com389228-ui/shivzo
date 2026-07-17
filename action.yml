@@ -1,0 +1,12 @@
+name: "Build and Publish release APK from your Android project"
+branding:
+  icon: "package"
+  color: "red"
+description: "Build Android release APK and upload as a github release match the created new tag"
+author: "alsrb968"
+inputs:
+  GITHUB_TOKEN:
+    description: "Github secret token to allow automated publishing of APK to release."
+runs:
+  using: "docker"
+  image: "Dockerfile"
